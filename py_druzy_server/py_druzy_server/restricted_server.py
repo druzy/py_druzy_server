@@ -15,12 +15,20 @@ from py_druzy_utils import network_utils
 
 class RestrictedFileServer:
     
-    _identifiant=0
+    _instances=dict()
+    
+    def __new__(cls,port):
+        if not (port in cls._instances):
+            cls._instances[port]=object.__new__(cls,port)
+            
+        return cls._instances[port]
+            
     
     def __init__(self,port):
         self._files=dict()
         self._port=port
         self._identifiant=0
+
         pass
     
     @cherrypy.expose
@@ -36,21 +44,23 @@ class RestrictedFileServer:
         else:
             raise cherrypy._cperror.NotFound()
             
-    def start(self):
+    def _start(self):
         threading.Thread(None,self._start_cherrypy).start()
         
     def _start_cherrypy(self):
+        
         cherrypy.config.update({'server.socket_port': self._port,
                                 'server.socket_host': network_utils.get_local_ip()})
         cherrypy.quickstart(self)
         
-    def stop(self):
+    def _stop(self):
         cherrypy.engine.exit()
         
     def add_file(self,f):
         if os.path.isfile(f):
             self._files[self._identifiant]=f
             self._identifiant+=1
+            self._start()
             return self._identifiant-1
         else:
             return None
@@ -59,6 +69,8 @@ class RestrictedFileServer:
         identifiant=self.get_id(f)
         if identifiant is not None:
             del self._files[identifiant]
+            if len(identifiant)==0:
+                self._stop()
         
     def get_id(self,f):
         res=None
@@ -79,6 +91,6 @@ class RestrictedFileServer:
         
 if __name__=="__main__":
     server=RestrictedFileServer(10000)
-    server.add_file("/home/druzy/elliot.mp4")
+    server2=RestrictedFileServer(10000)
     
-    server.start()
+    print(server is server2)
