@@ -40,7 +40,8 @@ class RestrictedFileServer:
         threading.Thread(None,self._start_cherrypy).start()
         
     def _start_cherrypy(self):
-        cherrypy.config.update({'server.socket_port': self._port})
+        cherrypy.config.update({'server.socket_port': self._port,
+                                'server.socket_host': network_utils.get_local_ip()})
         cherrypy.quickstart(self)
         
     def stop(self):
@@ -71,7 +72,7 @@ class RestrictedFileServer:
     def get_address(self,f):
         identifiant=self.get_id(f)
         if identifiant is not None:
-            return "http://"+network_utils.get_local_ip()+":"+self._port+"/file?identifiant="+str(identifiant)
+            return "http://"+network_utils.get_local_ip()+":"+str(self._port)+"/file?identifiant="+str(identifiant)
         else:
             return None
     
