@@ -13,7 +13,9 @@ import threading
 import os
 from py_druzy_utils import network_utils
 
-class RestrictedFileServer:
+class RestrictedFileServer(object):
+    '''serveur http très restrictif
+    le serveur démarre automatiquement à l'ajout d'un fichier'''
     
     _instances=dict()
     
@@ -22,9 +24,9 @@ class RestrictedFileServer:
             cls._instances[port]=object.__new__(cls,port)
             
         return cls._instances[port]
-            
     
     def __init__(self,port):
+        
         self._files=dict()
         self._port=port
         self._identifiant=0
@@ -33,6 +35,7 @@ class RestrictedFileServer:
     
     @cherrypy.expose
     def file(self,identifiant):
+        '''path /file du serveur'''
         try:
             identifiant=int(identifiant)
         except:
@@ -57,6 +60,7 @@ class RestrictedFileServer:
         cherrypy.engine.exit()
         
     def add_file(self,f):
+        ''' ajoute un fichier autorisé au serveur'''
         if os.path.isfile(f):
             self._files[self._identifiant]=f
             self._identifiant+=1
@@ -66,13 +70,15 @@ class RestrictedFileServer:
             return None
         
     def remove_file(self,f):
+        '''Supprime un fichier autorisé du fichier'''
         identifiant=self.get_id(f)
         if identifiant is not None:
             del self._files[identifiant]
-            if len(identifiant)==0:
+            if len(self._files)==0:
                 self._stop()
         
     def get_id(self,f):
+        ''' Renvoie l'identifiant selon le nom du fichier'''
         res=None
         for identifiant in self._files:
             if self._files[identifiant]==f:
@@ -81,16 +87,21 @@ class RestrictedFileServer:
         
         return res
     
-    def get_address(self,f):
-        identifiant=self.get_id(f)
-        if identifiant is not None:
-            return "http://"+network_utils.get_local_ip()+":"+str(self._port)+"/file?identifiant="+str(identifiant)
+    def get_address(self,identifiant):
+        ''' Renvoie l'adresse relative à l'identifiant ou le nom du fichier'''
+        if isinstance(identifiant, str):
+            return self.get_address(self.get_id(identifiant))
         else:
-            return None
+            if (identifiant is not None) and (identifiant in self._files):
+                return "http://"+network_utils.get_local_ip()+":"+str(self._port)+"/file?identifiant="+str(identifiant)
+            else:
+                return None
     
-        
+    
 if __name__=="__main__":
     server=RestrictedFileServer(10000)
     server2=RestrictedFileServer(10000)
+    server3=RestrictedFileServer(10001)
     
     print(server is server2)
+    print(server is server3)
