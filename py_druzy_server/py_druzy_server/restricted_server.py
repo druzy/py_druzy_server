@@ -64,7 +64,8 @@ class RestrictedFileServer(object):
         if os.path.isfile(f):
             self._files[self._identifiant]=f
             self._identifiant+=1
-            self._start()
+            if len(self._files)==1:
+                self._start()
             return self._identifiant-1
         else:
             return None
@@ -99,9 +100,15 @@ class RestrictedFileServer(object):
     
     
 if __name__=="__main__":
+    f="/home/druzy/elliot.mp4"
     server=RestrictedFileServer(10000)
     server2=RestrictedFileServer(10000)
     server3=RestrictedFileServer(10001)
+    server.add_file(f)
+    server.add_file(f)
+    print(server.get_address(f))
     
-    print(server is server2)
-    print(server is server3)
+    #server2.add_file("/home/druzy/elliot.mp4")
+    
+    #print(server is server2)
+    #print(server is server3)
